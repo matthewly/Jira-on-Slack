@@ -14,7 +14,7 @@ var app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true}));
 
-const PORT=4340;
+const PORT=4350;
 
 
 app.listen(PORT, function () {
@@ -51,6 +51,7 @@ app.get('/oauth', function(req, res) {
     }
 
     app.post('/command', function(req, res) {
+
       function checkType (str) {
         if (str == "auto" || str == "bug" || str == "change" ||
           str == "deploy" || str == "epic" || str == "improvement" ||
@@ -150,6 +151,11 @@ app.get('/oauth', function(req, res) {
         else
           return ""
         }
+
+        res.status('200').send('Retrieving Jiras . . . :robot_face:');
+
+        var response_url = req.body.response_url;
+        console.log(response_url);
 
         var arr = req.body.text.toLowerCase().split(" ");
 
@@ -288,7 +294,6 @@ app.get('/oauth', function(req, res) {
           password = creds.pw,
           url = 'https://' + dhruv + ':' + password + '@jira2-test.workday.com:443/rest/api/2/search?jql=' + userString + statusString + typeString;
 
-          console.log(url);
 
           request({url: url}, function (error, response, body) {
             var res_json = JSON.parse(response.body);
@@ -297,7 +302,6 @@ app.get('/oauth', function(req, res) {
             var attachments = [];
             var text = "";
             for(var i = 0; i < res_json.issues.length; i++) {
-              if (i === 10) break;
 
               var fix_versions_name = "";
               if (res_json.issues[i].fields.fixVersions.length != 0)
@@ -336,10 +340,23 @@ app.get('/oauth', function(req, res) {
               "attachments": attachments
             };
 
-            console.log(obj_to_slack);
+            //console.log(obj_to_slack);
+
 
             /* Send message obj to slack */
-            res.send(obj_to_slack);
+            request({
+                url: response_url,
+                method: 'POST',
+                json: obj_to_slack
+            }, function(error, response, body){
+                if(error) {
+                    console.log(error);
+                } else {
+                    console.log(response.statusCode, body);
+            }
+            });
+
+
           });
 
     });
